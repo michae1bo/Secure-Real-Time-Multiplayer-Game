@@ -37,7 +37,6 @@ class Player {
     const totalPlayers = arr.length;
     for (let i = 0; i < totalPlayers; i++) {
       if (arr[i].score > this.score) {
-        console.log('hi')
         rank++;
       }
     }
