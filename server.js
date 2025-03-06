@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const expect = require('chai');
-const socket = require('socket.io');
 const cors = require('cors');
 const helmet = require('helmet');
 
@@ -47,10 +46,36 @@ app.use(function(req, res, next) {
     .send('Not Found');
 });
 
+
+//Game server
+const http = require('http').createServer(app);
+const io = require('socket.io')(http);
+let currentPlayers = [];
+let nextID = 1;
+
+io.on('connection', socket => {
+  const id = nextID;
+  nextID++;
+  console.log('User', id, 'has connected.');
+  const newPlayerObj = {id: id, collectible: 0, players: currentPlayers}
+  io.emit('init', newPlayerObj)
+  socket.on('new-player', newPlayer => {
+    currentPlayers.push(newPlayer);
+  })
+  socket.on('disconnect', () => {
+    const playerIds = currentPlayers.map(player => player.id);
+    const idIndex = playerIds.indexOf(id);
+    currentPlayers = currentPlayers.slice(0, idIndex).concat(currentPlayers.slice(idIndex + 1));
+    console.log('User', id, 'has disconnected.');
+  })
+})
+
+
+
 const portNum = process.env.PORT || 3000;
 
 // Set up server and tests
-const server = app.listen(portNum, () => {
+const server = http.listen(portNum, () => {
   console.log(`Listening on port ${portNum}`);
   if (process.env.NODE_ENV==='test') {
     console.log('Running Tests...');
