@@ -20,3 +20,7 @@ canvas {
     flex-direction: row;
   }
 }
+
+#game-window {
+  background-color: black;
+}
