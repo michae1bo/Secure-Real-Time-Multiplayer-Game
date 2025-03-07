@@ -63,10 +63,9 @@ let item = genNewCollectible();
 
 function genNewCollectible() {
   const x = Math.floor(Math.random() * (width - itemDimesnsions + 1));
-  const y = Math.floor(Math.random() * (height - itemDimesnsions + titleHeight + 1));
+  const y = Math.floor(Math.random() * (height - itemDimesnsions - titleHeight + 1) + titleHeight);
   const collectibleObject = {x, y, value: 1, id: nextItemID};
   nextItemID++;
-  console.log(collectibleObject);
   return collectibleObject;
 }
 
@@ -90,7 +89,6 @@ io.on('connection', socket => {
     console.log('User', clientId, 'has disconnected.');
   })
   socket.on('player-moving', ({id, x, y}) => {
-    console.log('id":', id, 'x:', x, 'y', y);
     for (let i = 0; i < currentPlayers.length; i++) {
       if (currentPlayers[i].id === id) {
           currentPlayers[i].x = x;
