@@ -51,14 +51,19 @@ app.use(function(req, res, next) {
 const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 let currentPlayers = [];
-let nextID = 1;
+let nextID = 0;
 let nextItemID = 1;
 const height = 480;
-const width = 640
+const width = 640;
+const itemDimesnsions = 3;
+const titleHeight = 20;
+
+let item = genNewCollectible();
+
 
 function genNewCollectible() {
-  const x = Math.floor(Math.random() * (width + 1));
-  const y = Math.floor(Math.random() * (height + 1));
+  const x = Math.floor(Math.random() * (width - itemDimesnsions + 1));
+  const y = Math.floor(Math.random() * (height - itemDimesnsions + titleHeight + 1));
   const collectibleObject = {x, y, value: 1, id: nextItemID};
   nextItemID++;
   console.log(collectibleObject);
@@ -66,10 +71,10 @@ function genNewCollectible() {
 }
 
 io.on('connection', socket => {
-  const id = nextID;
   nextID++;
-  console.log('User', id, 'has connected.');
-  const newPlayerObj = {id: id, collectible: genNewCollectible(), players: currentPlayers}
+  const clientId = nextID;
+  console.log('User', nextID, 'has connected.');
+  const newPlayerObj = {id: nextID, collectible: item, players: currentPlayers}
   io.emit('init', newPlayerObj)
   socket.on('new-player', newPlayer => {
     const currentIds = currentPlayers.map(player => player.id);
@@ -79,17 +84,18 @@ io.on('connection', socket => {
   })
   socket.on('disconnect', () => {
     const playerIds = currentPlayers.map(player => player.id);
-    const idIndex = playerIds.indexOf(id);
+    const idIndex = playerIds.indexOf(clientId);
     currentPlayers = currentPlayers.slice(0, idIndex).concat(currentPlayers.slice(idIndex + 1));
-    io.emit('remove-player', {id: id});
-    console.log('User', id, 'has disconnected.');
+    io.emit('update-players', {updatedPlayers: currentPlayers});
+    console.log('User', clientId, 'has disconnected.');
   })
   socket.on('player-moving', ({id, x, y}) => {
-    console.log('x:', x, 'y', y);
+    console.log('id":', id, 'x:', x, 'y', y);
     for (let i = 0; i < currentPlayers.length; i++) {
       if (currentPlayers[i].id === id) {
           currentPlayers[i].x = x;
           currentPlayers[i].y = y;
+          io.emit('update-players', {updatedPlayers: currentPlayers});
           break;
       }
     }
@@ -100,7 +106,8 @@ io.on('connection', socket => {
     for (let i = 0; i < currentPlayers.length; i++) {
         if (currentPlayers[i].id === id) {
             currentPlayers[i].score = score;
-            io.emit('new-collectible', {collectible: genNewCollectible()});
+            item = genNewCollectible();
+            io.emit('new-collectible', {collectible: item});
             break;
         }
     }

@@ -4,6 +4,7 @@ class Collectible {
     this.y = y;
     this.value = value;
     this.id = id;
+    this.dimensions = 3;
   }
 
 }

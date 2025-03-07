@@ -1,10 +1,11 @@
+
 class Player {
   constructor({x, y, score, id}) {
     this.id = id;
     this.score = score;
     this.x = x;
     this.y = y;
-
+    this.dimensions = 5;
   }
 
   movePlayer(dir, speed) {
@@ -25,7 +26,19 @@ class Player {
   }
 
   collision(item) {
-    if (this.x === item.x && this.y === item.y) {
+    let hitsX  = false;
+    let hitsY = false;
+    for (let i = 0; i < this.dimensions; i++) {
+      for (let j = 0; j < item.dimensions; j++) {
+        if (this.x + i === item.x + j) {
+          hitsX = true;
+        }
+        if (this.y + i === item.y + j) {
+          hitsY = true;
+        }
+      }
+    }
+    if (hitsX && hitsY) {
       return true;
     } else {
       return false;

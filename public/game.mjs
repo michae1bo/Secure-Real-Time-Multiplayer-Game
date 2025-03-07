@@ -9,11 +9,37 @@ const context = canvas.getContext('2d');
 let currentPlayers = [];
 let item;
 
+
+function drawCanvas(currentPlayers, item, mainPlayer){
+    context.fillText('stuff', 0, 0);
+    const playerColors = ['red', 'green', 'blue', 'purple', 'pink']
+    const itemColor = 'yellow';
+    const bgColor = 'black'
+    context.fillStyle = bgColor;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = 'white';
+    context.font = "20px Arial";
+    context.textAlign = 'center';
+    context.fillText('Controls: WASD', 80, 18);
+    context.fillText(mainPlayer.calculateRank(currentPlayers), 590, 18)
+    context.fillRect(0, 19, canvas.width, 1)
+    for (let i = 0; i < currentPlayers.length; i++) {
+        context.fillStyle = playerColors[i % playerColors.length];
+        context.fillRect(currentPlayers[i].x, currentPlayers[i].y, currentPlayers[i].dimensions, currentPlayers[i].dimensions);
+    }
+    context.fillStyle = itemColor;
+    context.fillRect(item.x, item.y, item.dimensions, item.dimensions)
+}
+
+let myPlayer;
+
+
 socket.on('init', ({id, collectible, players}) => {
-    console.log('connected as player', id);
-    console.log(players);
+    if (myPlayer) {
+        return;
+    }
     currentPlayers = currentPlayers.concat(players)
-    const myPlayer = new Player({x: 0, y: 0, score: 0, id: id});
+    myPlayer = new Player({x: 0, y: 20, score: 0, id: id});
     currentPlayers = currentPlayers.concat(myPlayer);
     socket.emit('new-player', myPlayer);
     
@@ -23,85 +49,53 @@ socket.on('init', ({id, collectible, players}) => {
         let playerMoved = false;
         switch(e.key) {
             case 'w':
-                myPlayer.movePlayer('up', 1);
+                myPlayer.movePlayer('down', myPlayer.dimensions);
                 playerMoved = true;
                 break;
             case 'a':
-                myPlayer.movePlayer('left', 1);
+                myPlayer.movePlayer('left', myPlayer.dimensions);
                 playerMoved = true;
                 break;
             case 's':
-                myPlayer.movePlayer('down', 1);
+                myPlayer.movePlayer('up', myPlayer.dimensions);
                 playerMoved = true;
                 break;
             case 'd':
-                myPlayer.movePlayer('right', 1);
+                myPlayer.movePlayer('right', myPlayer.dimensions);
                 playerMoved = true;
                 break;
         }
         if (playerMoved) {
-            if (myPlayer.x < 0 || myPlayer.x > canvas.width) {
+            if (myPlayer.x < 0 ) {
                 myPlayer.x = 0;
-            } else if (myPlayer.y < 0 || myPlayer.y > canvas.height) {
-                myPlayer.y = 0;
+            } else if (myPlayer.x > canvas.width - myPlayer.dimensions) {
+                myPlayer.x = canvas.width - myPlayer.dimensions;
+            } else if (myPlayer.y < 20) {
+                myPlayer.y = 20;
+            } else if (myPlayer.y > canvas.height - myPlayer.dimensions) {
+                myPlayer.y = canvas.height - myPlayer.dimensions;
             } else{
                 socket.emit('player-moving', {id: myPlayer.id, x: myPlayer.x, y: myPlayer.y});
                 if (myPlayer.collision(item)) {
                     myPlayer.score += item.value;
                     socket.emit('player-scoring', {id: myPlayer.id, score: myPlayer.score});
                 }
-                drawCanvas();
+                drawCanvas(currentPlayers, item, myPlayer);
             }
         }
     }
 
-    socket.on('new-player', newPlayer => {
-        const currentIds = currentPlayers.map(player => player.id);
-        if (!currentIds.includes(newPlayer.id)) {
-            currentPlayers.push(newPlayer);
-            console.log('New player', id , 'has joined')
-            drawCanvas();
-        }
-    })
-    
-    socket.on('player-moving', ({id, x, y})=> {
-        for (let i = 0; i < currentPlayers.length; i++) {
-            if (currentPlayers[i].id === id) {
-                currentPlayers[i].x = x;
-                currentPlayers[i].y = y;
-                drawCanvas();
-                break;
-            }
-        }
-    })
-    
-    socket.on('player-scoring', ({id, score}) => {
-        for (let i = 0; i < currentPlayers.length; i++) {
-            if (currentPlayers[i].id === id) {
-                currentPlayers[i].score = score;
-                break;
-            }
-        }
+    socket.on('update-players', ({updatedPlayers}) => {
+        currentPlayers = updatedPlayers;
+        drawCanvas(currentPlayers, item, myPlayer);
     })
     
     socket.on('new-collectible', ({collectible}) => {
         item = new Collectible(collectible)
-        drawCanvas();
+        drawCanvas(currentPlayers, item, myPlayer);
     })
     
-    socket.on('remove-player', ({id}) => {
-        const playerIds = currentPlayers.map(player => player.id);
-        const idIndex = playerIds.indexOf(id);
-        currentPlayers = currentPlayers.slice(0, idIndex).concat(currentPlayers.slice(idIndex + 1));
-        console.log('Player', id, 'has disconnected');
-        drawCanvas();
-    })
-    console.log(currentPlayers)
-    drawCanvas();
+    drawCanvas(currentPlayers, item, myPlayer);
 })
-
-function drawCanvas(){ 
-
-}
 
 
