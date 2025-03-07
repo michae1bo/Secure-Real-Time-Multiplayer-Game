@@ -52,12 +52,24 @@ const http = require('http').createServer(app);
 const io = require('socket.io')(http);
 let currentPlayers = [];
 let nextID = 1;
+let nextItemID = 1;
+const height = 480;
+const width = 640
+
+function genNewCollectible() {
+  const x = Math.floor(Math.random() * (width + 1));
+  const y = Math.floor(Math.random() * (height + 1));
+  const collectibleObject = {x, y, value: 1, id: nextItemID};
+  nextItemID++;
+  console.log(collectibleObject);
+  return collectibleObject;
+}
 
 io.on('connection', socket => {
   const id = nextID;
   nextID++;
   console.log('User', id, 'has connected.');
-  const newPlayerObj = {id: id, collectible: 0, players: currentPlayers}
+  const newPlayerObj = {id: id, collectible: genNewCollectible(), players: currentPlayers}
   io.emit('init', newPlayerObj)
   socket.on('new-player', newPlayer => {
     currentPlayers.push(newPlayer);
@@ -66,10 +78,31 @@ io.on('connection', socket => {
     const playerIds = currentPlayers.map(player => player.id);
     const idIndex = playerIds.indexOf(id);
     currentPlayers = currentPlayers.slice(0, idIndex).concat(currentPlayers.slice(idIndex + 1));
+    io.emit('remove-player', {id: id});
     console.log('User', id, 'has disconnected.');
   })
-})
+  socket.on('player-moving', ({id, x, y}) => {
+    console.log('x:', x, 'y', y);
+    for (let i = 0; i < currentPlayers.length; i++) {
+      if (currentPlayers[i].id === id) {
+          currentPlayers[i].x = x;
+          currentPlayers[i].y = y;
+          break;
+      }
+    }
+  })
 
+  socket.on('player-scoring', ({id, score}) => {
+    console.log(id, 'scored');
+    for (let i = 0; i < currentPlayers.length; i++) {
+        if (currentPlayers[i].id === id) {
+            currentPlayers[i].score = score;
+            io.emit('new-collectible', {collectible: genNewCollectible()});
+            break;
+        }
+    }
+  })
+})
 
 
 const portNum = process.env.PORT || 3000;
