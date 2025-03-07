@@ -72,7 +72,10 @@ io.on('connection', socket => {
   const newPlayerObj = {id: id, collectible: genNewCollectible(), players: currentPlayers}
   io.emit('init', newPlayerObj)
   socket.on('new-player', newPlayer => {
-    currentPlayers.push(newPlayer);
+    const currentIds = currentPlayers.map(player => player.id);
+      if (!currentIds.includes(newPlayer.id)) {
+          currentPlayers.push(newPlayer);
+      }
   })
   socket.on('disconnect', () => {
     const playerIds = currentPlayers.map(player => player.id);

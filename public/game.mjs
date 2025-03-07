@@ -6,14 +6,17 @@ const socket = io();
 const canvas = document.getElementById('game-window');
 const context = canvas.getContext('2d');
 
-const currentPlayers = [];
+let currentPlayers = [];
 let item;
 
 socket.on('init', ({id, collectible, players}) => {
     console.log('connected as player', id);
-    currentPlayers.concat(players)
+    console.log(players);
+    currentPlayers = currentPlayers.concat(players)
     const myPlayer = new Player({x: 0, y: 0, score: 0, id: id});
+    currentPlayers = currentPlayers.concat(myPlayer);
     socket.emit('new-player', myPlayer);
+    
     item = new Collectible(collectible)
 
     document.onkeydown = (e) => {
@@ -47,13 +50,18 @@ socket.on('init', ({id, collectible, players}) => {
                     myPlayer.score += item.value;
                     socket.emit('player-scoring', {id: myPlayer.id, score: myPlayer.score});
                 }
+                drawCanvas();
             }
         }
     }
 
     socket.on('new-player', newPlayer => {
-        currentPlayers.push(newPlayer);
-        console.log('New player', id , 'has joined')
+        const currentIds = currentPlayers.map(player => player.id);
+        if (!currentIds.includes(newPlayer.id)) {
+            currentPlayers.push(newPlayer);
+            console.log('New player', id , 'has joined')
+            drawCanvas();
+        }
     })
     
     socket.on('player-moving', ({id, x, y})=> {
@@ -61,6 +69,7 @@ socket.on('init', ({id, collectible, players}) => {
             if (currentPlayers[i].id === id) {
                 currentPlayers[i].x = x;
                 currentPlayers[i].y = y;
+                drawCanvas();
                 break;
             }
         }
@@ -77,6 +86,7 @@ socket.on('init', ({id, collectible, players}) => {
     
     socket.on('new-collectible', ({collectible}) => {
         item = new Collectible(collectible)
+        drawCanvas();
     })
     
     socket.on('remove-player', ({id}) => {
@@ -84,7 +94,14 @@ socket.on('init', ({id, collectible, players}) => {
         const idIndex = playerIds.indexOf(id);
         currentPlayers = currentPlayers.slice(0, idIndex).concat(currentPlayers.slice(idIndex + 1));
         console.log('Player', id, 'has disconnected');
+        drawCanvas();
     })
+    console.log(currentPlayers)
+    drawCanvas();
 })
+
+function drawCanvas(){ 
+
+}
 
 
