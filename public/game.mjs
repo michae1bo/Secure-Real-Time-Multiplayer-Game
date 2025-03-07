@@ -21,6 +21,7 @@ function drawCanvas(currentPlayers, item, mainPlayer){
     context.font = "20px Arial";
     context.textAlign = 'center';
     context.fillText('Controls: WASD', 80, 18);
+    context.fillText('Score:' + mainPlayer.score, canvas.width / 2, 18)
     context.fillText(mainPlayer.calculateRank(currentPlayers), 590, 18)
     context.fillRect(0, 19, canvas.width, 1)
     for (let i = 0; i < currentPlayers.length; i++) {
